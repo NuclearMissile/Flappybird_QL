@@ -35,10 +35,25 @@
     <None Include="routes\user.ts" />
     <Content Include="public\csv\atlas.csv" />
     <Content Include="public\images\atlas.png" />
+    <Content Include="public\javascripts\Controller.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="public\javascripts\core.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="public\index.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="public\javascripts\Model.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="public\javascripts\Settings.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="public\javascripts\Util.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="public\javascripts\View.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="tsconfig.json" />

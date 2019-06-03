@@ -15,16 +15,15 @@
             background-color: #111;
         }
     </style>
-    <link href="https://cdn.bootcss.com/semantic-ui/2.2.10/semantic.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcss.com/semantic-ui/2.4.1/semantic.min.css" rel="stylesheet">
 </head>
 
 <body>
     <div class="ui menu">
         <div class="item header">Flappy Bird Q-learning</div>
         <div class="right menu">
-            <a href="https://github.com/Enhuiz/flappybird-ql" class="ui item">
+            <a href="https://github.com/NuclearMissile/Flappybird_QL/" class="ui item">
                 View on GitHub &nbsp
-                <i class="alternate github icon"></i>
             </a>
         </div>
     </div>
@@ -83,11 +82,11 @@
         });
 
         $("#inc-fps-btn").click(function () {
-            gameLoop.timeScale = Math.min(gameLoop.timeScale * 1.2, 6);
+            gameLoop.timeScale = Math.min(gameLoop.timeScale * 1.5, 10);
         });
 
         $("#dec-fps-btn").click(function () {
-            gameLoop.timeScale = Math.max(gameLoop.timeScale * 0.833, 1 / 6);
+            gameLoop.timeScale = Math.max(gameLoop.timeScale * 0.5, 1 / 10);
         });
 
         $("#rst-fps-btn").click(function () {
