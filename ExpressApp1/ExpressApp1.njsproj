@@ -41,6 +41,7 @@
     <Content Include="public\index.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="public\javascripts\core.js" />
     <Content Include="public\javascripts\Entry.js">
       <SubType>Code</SubType>
     </Content>
