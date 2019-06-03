@@ -18,7 +18,8 @@ $("#dec-fps-btn").click(() => controller.decFrameRate());
 
 $("#rst-fps-btn").click(() => controller.resetFrameRate());
 
-$("#panel-btn").click(() => this.toggle());
+var panel = $("#panel");
+$("#panel-btn").click(() => panel.toggle());
 
 var fpsSpan = $("#fps-span");
 var roundSpan = $("#round-span");
@@ -31,7 +32,7 @@ var maxScore = 0;
 var averageScore = 0;
 var qlState = 0;
 
-controller.loopCallbacks.push(gameState => {
+controller.loopCallbacks.push(() => {
     if (!panel.is(":visible"))
         return;
     var newRound = controller.round;

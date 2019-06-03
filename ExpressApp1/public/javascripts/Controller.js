@@ -20,25 +20,24 @@ class BaseController {
         throw new NotImplementError("BaseController::getUpdaterList");
     }
 
-    loop() {
-        this.gameState = this.refresh(this.curFrame++);
-        this.gameRender.render(this.gameState);
-
+    static loop() {
+        controller = controller.update(controller.curFrame++);
+        controller.gameRender.render(controller.gameState);
         var curTime = DATE.getTime();
-        var deltaTime = curTime - this.lastTime;
+        var deltaTime = curTime - controller.lastTime;
         if (deltaTime > fpsRefreshInterval) {
-            this.lastTime = curTime;
-            var deltaFrame = this.curFrame - this.lastFrame;
-            this.lastFrame = this.curFrame;
-            this.gameRender.ctx.fillText(Math.floor(1000 * deltaFrame / deltaTime) + 'fps', 15, 25);
+            controller.lastTime = curTime;
+            var deltaFrame = controller.curFrame - controller.lastFrame;
+            controller.lastFrame = controller.curFrame;
+            controller.gameRender.ctx.fillText(Math.floor(1000 * deltaFrame / deltaTime) + 'fps', 15, 25);
         }
             
-        this.loopCallbacks.forEach(fn => fn(this.gameState));
-        setTimeout(this.loop, inverseDefaultFPS / this.timeScale);
+        controller.loopCallbacks.forEach(fn => fn());
+        setTimeout(BaseController.loop, inverseDefaultFPS / this.timeScale);
     }
 
     start() {
-        setTimeout(this.loop, inverseDefaultFPS);
+        setTimeout(BaseController.loop(this), inverseDefaultFPS);
     }
 
     incFrameRate() {
@@ -53,9 +52,9 @@ class BaseController {
         this.timeScale = 1;
     }
 
-    refresh(frameStamp) {
+    update(frameStamp) {
         this.gameState.curFrame = frameStamp;
-        return apply(this.gameState, this.getUpdaterList());
+        return apply(this, this.getUpdaterList());
     }
 
     static curPipePos(curFrame, pipe) {
@@ -78,7 +77,8 @@ class BaseController {
         return birdY + birdHeight >= landY;
     }
 
-    static jump(gameState) {
+    static jump(controller) {
+        var gameState = controller.gameState;
         var mode = gameState.mode;
         var curFrame = gameState.curFrame;
 
@@ -91,13 +91,14 @@ class BaseController {
             gameState.mode = "playing";
         } else if (mode === "dead" && gameState.deadFlash > deadFlashFrame) {
             gameState = gameState.reset();
-            gameState = this.jump(gameState);
+            gameState = BaseController.jump(gameState);
         }
 
-        return gameState;
+        return controller;
     }
 
-    static animation(gameState) {
+    static animation(controller) {
+        var gameState = controller.gameState;
         var mode = gameState.mode;
         var curFrame = gameState.curFrame;
 
@@ -111,21 +112,23 @@ class BaseController {
             gameState.deadFlash += 1;
         }
 
-        return gameState;
+        return controller;
     }
 
-    static updateLand(gameState) {
+    static updateLand(controller) {
+        var gameState = controller.gameState;
         if (gameState.mode == "dead")
-            return gameState;
+            return controller;
 
         var curFrame = gameState.curFrame;
-        var landList = gameState.landList
-            .map(land => {
-                land.curX = this.curLandPos(curFrame, land);
-                return land;
-            })
-            .filter(land => land.curX > -landWidth)
-            .sort((a, b) => a.curX - b.curX);
+        var landList = gameState.landList.map(land => {
+            land.curX = BaseController.curLandPos(curFrame, land);
+            return land;
+        }).filter(function (land) {
+            return land.curX > -landWidth;
+        }).sort(function (a, b) {
+            return a.curX - b.curX;
+        });
 
         while (landList.length < 2) {
             var lastLand = last(landList);
@@ -133,17 +136,18 @@ class BaseController {
         }
 
         gameState.landList = landList;
-        return gameState;
+        return controller;
     }
 
-    static updatePipes(gameState) {
+    static updatePipes(controller) {
+        var gameState = controller.gameState;
         if (gameState.mode != "playing")
-            return gameState;
+            return controller;
 
         var curFrame = gameState.curFrame;
         var pipeList = gameState.pipeList
             .map(pipe => {
-                pipe.curX = this.curPipePos(curFrame, pipe);
+                pipe.curX = BaseController.curPipePos(curFrame, pipe);
                 return pipe;
             })
             .filter(pipe => pipe.curX > -pipeWidth)
@@ -155,22 +159,24 @@ class BaseController {
         }
 
         gameState.pipeList = pipeList;
-        return gameState;
+        return controller;
     }
 
-    static updateCollision(gameState) {
+    static updateCollision(controller) {
+        var gameState = controller.gameState;
         var birdY = gameState.birdY;
         var pipeList = gameState.pipeList;
 
-        if (pipeList.some(pipe => (this.inPipe(pipe) && !this.inPipeGap(birdY, pipe))
-            || this.collideGround(birdY))) {
+        if (pipeList.some(pipe => (BaseController.inPipe(pipe) && !BaseController.inPipeGap(birdY, pipe))
+            || BaseController.collideGround(birdY))) {
             gameState.mode = "dead";
         }
 
-        return gameState;
+        return controller;
     }
 
-    static updateBird(gameState) {
+    static updateBird(controller) {
+        var gameState = controller.gameState;
         var curFrame = gameState.curFrame;
         var jumpFrame = gameState.jumpFrame;
         var birdY = gameState.birdY;
@@ -181,10 +187,11 @@ class BaseController {
             var newY = Math.max(newY, -birdHeight);
             gameState.birdY = newY;
         }
-        return this.animation(gameState);
+        return BaseController.animation(controller);
     }
 
-    static updateScore(gameState) {
+    static updateScore(controller) {
+        var gameState = controller.gameState;
         if (gameState.mode == "playing") {
             var curFrame = gameState.curFrame;
             var startFrame = gameState.startFrame;
@@ -197,7 +204,7 @@ class BaseController {
             }
         }
 
-        return gameState;
+        return controller;
     }
 }
 
@@ -212,53 +219,54 @@ class QLController extends BaseController {
     }
 
     onLoad() {
-        var qlListener = e => {
+        var qlHanlder = (e) => {
             e.preventDefault();
             if (this.qlEnabled)
                 this.skip = true;
-            this.gameState = this.jump(this.gameState);
+            this.gameState = QLController.jump(this);
         };
-        this.gameRender.cvs.addEventListener('mousedown', qlListener);
-        this.gameRender.cvs.addEventListener('touchstart', qlListener);
+        this.gameRender.cvs.addEventListener('mousedown', qlHanlder);
+        this.gameRender.cvs.addEventListener('touchstart', qlHanlder);
     }
 
     getUpdaterList() {
-        return [this.updateLand,
-        this.updateBird,
-        this.updatePipes,
-        this.updateScore,
-        this.updateCollision,
-        this.updateQL,]
+        return [QLController.updateLand,
+        QLController.updateBird,
+        QLController.updatePipes,
+        QLController.updateScore,
+        QLController.updateCollision,
+        QLController.updateQL,]
     }
 
-    updateQL(gameState) {
-        if (!this.qlEnabled)
-            return gameState;
+    static updateQL(controller) {
+        var gameState = controller.gameState;
+        if (!controller.qlEnabled)
+            return controller;
 
-        if (this.skip) {
-            this.A = null;
-            this.S = null;
+        if (controller.skip) {
+            controller.A = null;
+            controller.S = null;
         }
 
-        if (!this.Q) {
-            this.Q = {};
-            this.S = null;
+        if (!controller.Q) {
+            controller.Q = {};
+            controller.S = null;
         }
 
-        var Q = this.Q;
+        var Q = controller.Q;
 
         // prev state
-        var S = this.S;
+        var S = controller.S;
         // prev action 
-        var A = this.A;
+        var A = controller.A;
         // current state
-        var S_ = this.getQLState(gameState);
+        var S_ = controller.getQLState(gameState);
 
         if (S_ && !(S_ in Q)) Q[S_] = [0, 0];
 
         if (gameState.mode == "playing") {
-            this.Q = this.reward(Q, S, S_, A, qlAliveReward);
-            this.S = S_;
+            controller.Q = controller.reward(Q, S, S_, A, qlAliveReward);
+            controller.S = S_;
 
             // current action, 0 for stay, 1 for jump
             var A_ = 0;
@@ -269,19 +277,19 @@ class QLController extends BaseController {
                 A_ = Q[S_][0] >= Q[S_][1] ? 0 : 1;
             }
 
-            if (A_ === 1) gameState = this.jump(gameState);
-            this.A = A_;
+            if (A_ === 1) gameState = QLController.jump(controller);
+            controller.A = A_;
         } else if (gameState.mode == "dead") {
-            this.Q = this.reward(Q, S, S_, A, qlDeadReward);
-            this.S = null;
-            this.A = null;
+            controller.Q = controller.reward(Q, S, S_, A, qlDeadReward);
+            controller.S = null;
+            controller.A = null;
 
             // restart the game
-            this.skip = false;
-            gameState = this.jump(gameState);
+            controller.skip = false;
+            gameState = QLController.jump(controller);
         }
 
-        return gameState;
+        return controller;
     }
 
     static reward(Q, S, S_, A, R) {

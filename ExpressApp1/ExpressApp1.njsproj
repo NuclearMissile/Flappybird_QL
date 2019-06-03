@@ -38,9 +38,6 @@
     <Content Include="public\javascripts\Controller.js">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="public\javascripts\core.jsz">
-      <SubType>Code</SubType>
-    </Content>
     <Content Include="public\index.html">
       <SubType>Code</SubType>
     </Content>

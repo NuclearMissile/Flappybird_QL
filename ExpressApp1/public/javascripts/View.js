@@ -26,6 +26,7 @@ class FlappyBirdRender {
                 this.resourcesLoaded = true;
             });
         });
+        this.image.src = atlasSrc;
     }
 
     drawSprite(spriteName, x, y) {
