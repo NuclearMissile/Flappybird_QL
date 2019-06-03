@@ -31,9 +31,9 @@ var swingT = 5;
 var pipeWidth = 48;
 var pipeHeight = 320;
 var pipeSpacing = 172;
-var pipeGap = 90;
+var pipeGap = 100;
 var pipeStartX = 360;
-var pipeRandomBoundary = 50;
+var pipeRandomBoundary = 80;
 
 // land
 var landStartX = 0;
@@ -43,7 +43,7 @@ var landY = 400;
 // ql
 var qlAlpha = 0.6;
 var qlGamma = 0.8;
-var qlResolution = 15;
+var qlResolution = 12;
 var qlAliveReward = 1;
 var qlDeadReward = -100;
 var qlEpsilon = 0;
@@ -135,7 +135,6 @@ function resetState(gameState) {
     var curFrame = gameState.curFrame;
     var totalScore = gameState.totalScore;
     var maxScore = gameState.maxScore;
-    var score = gameState.score;
 
     var gameState = startingState();
 
@@ -391,7 +390,6 @@ function updateQL(gameState) {
 
 function update(gameState, frameStamp) {
     gameState.curFrame = frameStamp;
-    gameState.deltaTime = frameStamp - gameState.jumpFrame;
     return apply(gameState, [
         updateLand,
         updateBird,
@@ -424,8 +422,8 @@ function render(gameState) {
                 result.split('\n').forEach(function (line) {
                     let values = line.split(' ');
                     render.sprites[values[0]] = [
-                        Math.round(parseInt(values[1], 10)),
-                        Math.round(parseInt(values[2], 10)),
+                        Math.round(parseInt(values[1])),
+                        Math.round(parseInt(values[2])),
                         Math.round(parseFloat(values[3]) * render.image.width),
                         Math.round(parseFloat(values[4]) * render.image.height)
                     ];
