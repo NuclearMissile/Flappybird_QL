@@ -1,40 +1,61 @@
 ﻿'use strict'
 
-class GameLoop {
-    constructor() {
-        this.timeScale = 1;
-        this.frameCount = 0;
-        this.lastTime = (new Date).getTime();
-    }
-
-    incTimeScale() {
-        this.timeScale = Math.min(gameLoop.timeScale * 1.5, 10);
-    }
-
-    decTimeScale() {
-        this.timeScale = Math.max(gameLoop.timeScale * 0.5, 1 / 10);
-    }
-
-    resetTimeScale() {
-        this.timeScale = 1;
-    }
-}
-
 class BaseController {
-
-    constructor(gameState, gameRender, gameLoop) {
+    constructor(gameState, gameRender) {
         this.gameState = gameState;
         this.gameRender = gameRender;
-        this.gameLoop = gameLoop;
+        this.timeScale = 1;
+        this.lastFrame = 0;
+        this.curFrame = 0;
+        this.lastTime = DATE.getTime();
+        this.loopCallbacks = [];
+        this.onLoad();
     }
 
-    update(frameStamp) {
-        this.gameState.curFrame = frameStamp;
-        return apply(this.gameState, this.getUpdaterList());
+    onLoad() {
+        throw new NotImplementError("BaseController::init");
     }
 
     getUpdaterList() {
-        return null;
+        throw new NotImplementError("BaseController::getUpdaterList");
+    }
+
+    loop() {
+        this.gameState = this.refresh(this.curFrame++);
+        this.gameRender.render(this.gameState);
+
+        var curTime = DATE.getTime();
+        var deltaTime = curTime - this.lastTime;
+        if (deltaTime > fpsRefreshInterval) {
+            this.lastTime = curTime;
+            var deltaFrame = this.curFrame - this.lastFrame;
+            this.lastFrame = this.curFrame;
+            this.gameRender.ctx.fillText(Math.floor(1000 * deltaFrame / deltaTime) + 'fps', 15, 25);
+        }
+            
+        this.loopCallbacks.forEach(fn => fn(this.gameState));
+        setTimeout(this.loop, inverseDefaultFPS / this.timeScale);
+    }
+
+    start() {
+        setTimeout(this.loop, inverseDefaultFPS);
+    }
+
+    incFrameRate() {
+        this.timeScale = Math.min(this.timeScale * 1.5, 10);
+    }
+
+    decFrameRate() {
+        this.timeScale = Math.max(this.timeScale * 0.5, 1 / 10);
+    }
+
+    resetFrameRate() {
+        this.timeScale = 1;
+    }
+
+    refresh(frameStamp) {
+        this.gameState.curFrame = frameStamp;
+        return apply(this.gameState, this.getUpdaterList());
     }
 
     static curPipePos(curFrame, pipe) {
@@ -70,7 +91,7 @@ class BaseController {
             gameState.mode = "playing";
         } else if (mode === "dead" && gameState.deadFlash > deadFlashFrame) {
             gameState = gameState.reset();
-            gameState = BaseUpdater.jump(gameState);
+            gameState = this.jump(gameState);
         }
 
         return gameState;
@@ -94,17 +115,17 @@ class BaseController {
     }
 
     static updateLand(gameState) {
-        if (gameState.mode == "dead") return gameState;
+        if (gameState.mode == "dead")
+            return gameState;
 
         var curFrame = gameState.curFrame;
-        var landList = gameState.landList.map(land => {
-            land.curX = BaseUpdater.curLandPos(curFrame, land);
-            return land;
-        }).filter(land => {
-            return land.curX > -landWidth;
-        }).sort((a, b) => {
-            return a.curX - b.curX;
-        });
+        var landList = gameState.landList
+            .map(land => {
+                land.curX = this.curLandPos(curFrame, land);
+                return land;
+            })
+            .filter(land => land.curX > -landWidth)
+            .sort((a, b) => a.curX - b.curX);
 
         while (landList.length < 2) {
             var lastLand = last(landList);
@@ -116,17 +137,17 @@ class BaseController {
     }
 
     static updatePipes(gameState) {
-        if (gameState.mode != "playing") return gameState;
+        if (gameState.mode != "playing")
+            return gameState;
 
         var curFrame = gameState.curFrame;
-        var pipeList = gameState.pipeList.map(pipe => {
-            pipe.curX = BaseUpdater.curPipePos(curFrame, pipe);
-            return pipe;
-        }).filter(pipe => {
-            return pipe.curX > -pipeWidth;
-        }).sort((a, b) => {
-            return a.curX - b.curX;
-        });
+        var pipeList = gameState.pipeList
+            .map(pipe => {
+                pipe.curX = this.curPipePos(curFrame, pipe);
+                return pipe;
+            })
+            .filter(pipe => pipe.curX > -pipeWidth)
+            .sort((a, b) => a.curX - b.curX);
 
         while (pipeList.length < 3) {
             var lastPipe = last(pipeList);
@@ -141,11 +162,8 @@ class BaseController {
         var birdY = gameState.birdY;
         var pipeList = gameState.pipeList;
 
-        if (pipeList.some(pipe => {
-            return (BaseUpdater.inPipe(pipe) &&
-                !BaseUpdater.inPipeGap(birdY, pipe)) ||
-                BaseUpdater.collideGround(birdY);
-        })) {
+        if (pipeList.some(pipe => (this.inPipe(pipe) && !this.inPipeGap(birdY, pipe))
+            || this.collideGround(birdY))) {
             gameState.mode = "dead";
         }
 
@@ -163,7 +181,7 @@ class BaseController {
             var newY = Math.max(newY, -birdHeight);
             gameState.birdY = newY;
         }
-        return BaseUpdater.animation(gameState);
+        return this.animation(gameState);
     }
 
     static updateScore(gameState) {
@@ -184,27 +202,38 @@ class BaseController {
 }
 
 class QLController extends BaseController {
-
-    constructor() {
-        super();
-        this.enabled = false;
+    constructor(render) {
+        super(new GameState(), render);
+        this.qlEnabled = false;
         this.skip = false;
         this.A = null;
         this.Q = {};
         this.S = null;
     }
 
+    onLoad() {
+        var qlListener = e => {
+            e.preventDefault();
+            if (this.qlEnabled)
+                this.skip = true;
+            this.gameState = this.jump(this.gameState);
+        };
+        this.gameRender.cvs.addEventListener('mousedown', qlListener);
+        this.gameRender.cvs.addEventListener('touchstart', qlListener);
+    }
+
     getUpdaterList() {
-        return [BaseUpdater.updateLand,
-        BaseUpdater.updateBird,
-        BaseUpdater.updatePipes,
-        BaseUpdater.updateScore,
-        BaseUpdater.updateCollision,
+        return [this.updateLand,
+        this.updateBird,
+        this.updatePipes,
+        this.updateScore,
+        this.updateCollision,
         this.updateQL,]
     }
 
     updateQL(gameState) {
-        if (!this.enabled) return gameState;
+        if (!this.qlEnabled)
+            return gameState;
 
         if (this.skip) {
             this.A = null;
@@ -223,12 +252,12 @@ class QLController extends BaseController {
         // prev action 
         var A = this.A;
         // current state
-        var S_ = QLUpdater.getQLState(gameState);
+        var S_ = this.getQLState(gameState);
 
         if (S_ && !(S_ in Q)) Q[S_] = [0, 0];
 
         if (gameState.mode == "playing") {
-            this.Q = QLUpdater.reward(Q, S, S_, A, qlAliveReward);
+            this.Q = this.reward(Q, S, S_, A, qlAliveReward);
             this.S = S_;
 
             // current action, 0 for stay, 1 for jump
@@ -240,16 +269,16 @@ class QLController extends BaseController {
                 A_ = Q[S_][0] >= Q[S_][1] ? 0 : 1;
             }
 
-            if (A_ === 1) gameState = BaseUpdater.jump(gameState);
+            if (A_ === 1) gameState = this.jump(gameState);
             this.A = A_;
         } else if (gameState.mode == "dead") {
-            this.Q = QLUpdater.reward(Q, S, S_, A, qlDeadReward);
+            this.Q = this.reward(Q, S, S_, A, qlDeadReward);
             this.S = null;
             this.A = null;
 
             // restart the game
             this.skip = false;
-            gameState = BaseUpdater.jump(gameState);
+            gameState = this.jump(gameState);
         }
 
         return gameState;
@@ -264,11 +293,9 @@ class QLController extends BaseController {
     static getQLState(gameState) {
         var pipeList = gameState.pipeList;
         var birdY = gameState.birdY;
-        var pipeList = pipeList.filter(pipe => {
-            return birdX < pipe.curX + pipeWidth;
-        }).sort((a, b) => {
-            return a.curX - b.curX;
-        });
+        var pipeList = pipeList
+            .filter(pipe => birdX < pipe.curX + pipeWidth)
+            .sort((a, b) => a.curX - b.curX);
 
         var firstPipe = first(pipeList);
         var S = null;

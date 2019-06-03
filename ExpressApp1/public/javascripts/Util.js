@@ -28,3 +28,5 @@ function apply(x, funcs) {
     funcs.forEach(f => { x = f(x);});
     return x;
 }
+
+class NotImplementError extends Error {}

@@ -1,8 +1,8 @@
 ﻿'use strict'
 
 class FlappyBirdRender {
-    constructor() {
-        this.cvs = document.getElementById("cvs");
+    constructor(cvs) {
+        this.cvs = cvs;
         this.cvs.width = width;
         this.cvs.height = height;
         this.ctx = this.cvs.getContext("2d");
@@ -52,18 +52,18 @@ class FlappyBirdRender {
         });
 
         // draw land
-        gameState.landList.forEach(land => {
-            this.drawSprite("land", land.curX, landY);
-        });
+        gameState.landList.forEach(land =>
+            this.drawSprite("land", land.curX, landY)
+        );
 
         // draw bird
-        this.drawSprite("bird0_" + gameState.birdSprite, birdX + birdRenderOffsetX,
+        this.drawSprite("bird0_" + gameState.birdSprite, birdX + birdRenderOffsetX, 
             gameState.birdY + birdRenderOffsetY);
 
         switch (gameState.mode) {
             case 'playing':
                 var score = gameState.score.toString();
-                for (var i = 0; i < score.length; ++i) {
+                for (let i = 0; i < score.length; ++i) {
                     var digit = score[i];
                     this.drawSprite("font_0" + (48 + parseInt(digit)), playingScoreMidX + (i - score.length / 2) * playingScoreSpacing, playingScoreY)
                 }
@@ -78,14 +78,14 @@ class FlappyBirdRender {
 
                 // draw score
                 var score = gameState.score.toString();
-                for (var i = 0; i < score.length; ++i) {
+                for (let i = 0; i < score.length; ++i) {
                     var digit = score[score.length - i - 1];
                     this.drawSprite("number_score_0" + digit, panelScoreRightX - i * panelScoreSpacing, panelScoreY);
                 }
 
                 // draw max score
                 var maxScore = gameState.maxScore.toString();
-                for (var i = 0; i < maxScore.length; ++i) {
+                for (let i = 0; i < maxScore.length; ++i) {
                     var digit = maxScore[maxScore.length - i - 1];
                     this.drawSprite("number_score_0" + digit, panelScoreRightX - i * panelScoreSpacing, panelMaxScoreY);
                 }
