@@ -17,12 +17,6 @@ class Land {
     }
 }
 
-class Bird {
-    constructor() {
-
-    }
-}
-
 class GameState {
     constructor() {
         // ready, playing, dead
@@ -43,18 +37,17 @@ class GameState {
     };
 
     reset() {
-        var round = this.round;
-        var curFrame = this.curFrame;
-        var totalScore = this.totalScore;
-        var maxScore = this.maxScore;
-        var newState = new GameState();
-
-        newState.startFrame = curFrame;
-        newState.curFrame = curFrame;
-        newState.round = round;
-        newState.totalScore = totalScore;
-        newState.maxScore = maxScore;
-        return newState;
+        this.mode = 'ready';
+        this.startFrame = this.curFrame;
+        this.jumpFrame = 0;
+        this.birdY = birdStartY;
+        this.birdSprite = 0;
+        this.round += 1;
+        this.score = 0;
+        this.deadFlash = 0;
+        this.fps = 0;
+        this.pipeList = [];
+        this.landList = [];
     };
 };
 

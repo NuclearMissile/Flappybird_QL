@@ -49,10 +49,6 @@ var qlExploreJumpRate = 0.1;
 
 // init fps
 var inverseDefaultFPS = 1000 / 40;
-var fpsRefreshInterval = 800;
-
-// Public Date object
-const DATE = new Date();
 
 // dead animation
 var deadFlashFrame = 5;

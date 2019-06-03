@@ -502,7 +502,8 @@ function render(gameState) {
                 ctx.globalAlpha = 1.0;
             }
         }
-    }
+    } else
+        console.log('call render(gameState) before resource loaded.');
 }
 
 var gameState = startingState();
