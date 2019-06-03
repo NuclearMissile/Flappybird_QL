@@ -1,4 +1,6 @@
-﻿class FlappyBirdRender {
+﻿'use strict'
+
+class FlappyBirdRender {
     constructor() {
         this.cvs = document.getElementById("cvs");
         this.cvs.width = width;
@@ -11,14 +13,14 @@
         this.image = new Image();
         this.image.src = atlasSrc;
         this.image.addEventListener("load", () => {
-            $.get(csvSrc, (result) => {
-                result.split('\n').forEach((line) => {
+            $.get(csvSrc, result => {
+                result.split('\n').forEach(line => {
                     let values = line.split(' ');
                     this.sprites[values[0]] = [
                         Math.round(parseInt(values[1])),
                         Math.round(parseInt(values[2])),
                         Math.round(parseFloat(values[3]) * this.image.width),
-                        Math.round(parseFloat(values[4]) * this.image.height)
+                        Math.round(parseFloat(values[4]) * this.image.height),
                     ];
                 });
                 this.resourcesLoaded = true;
@@ -32,40 +34,45 @@
     }
 
     render(gameState) {
-        if (this.resourcesLoaded) {
-            // clear
-            this.ctx.fillRect(0, 0, this.cvs.width, this.cvs.height);
+        if (!this.resourcesLoaded) {
+            console.log('call render(gameState) before resource loaded.');
+            return;
+        }
 
-            // draw background
-            this.drawSprite("bg_day", 0, 0);
+        // clear
+        this.ctx.fillRect(0, 0, this.cvs.width, this.cvs.height);
 
-            // draw pipes
-            gameState.pipeList.forEach(function (pipe) {
-                this.drawSprite("pipe_down", pipe.curX, pipe.gapTop - pipeHeight) // v
-                this.drawSprite("pipe_up", pipe.curX, pipe.gapTop + pipeGap); // ^
-            });
+        // draw background
+        this.drawSprite("bg_day", 0, 0);
 
-            // draw land
-            gameState.landList.forEach(function (land) {
-                this.drawSprite("land", land.curX, landY);
-            });
+        // draw pipes
+        gameState.pipeList.forEach(pipe => {
+            this.drawSprite("pipe_down", pipe.curX, pipe.gapTop - pipeHeight) // v
+            this.drawSprite("pipe_up", pipe.curX, pipe.gapTop + pipeGap); // ^
+        });
 
-            // draw bird
-            var birdY = gameState.birdY;
-            var birdSprite = gameState.birdSprite;
-            this.drawSprite("bird0_" + birdSprite, birdX + birdRenderOffsetX, birdY + birdRenderOffsetY);
+        // draw land
+        gameState.landList.forEach(land => {
+            this.drawSprite("land", land.curX, landY);
+        });
 
-            if (gameState.mode === "playing") {
-                // draw score
+        // draw bird
+        this.drawSprite("bird0_" + gameState.birdSprite, birdX + birdRenderOffsetX,
+            gameState.birdY + birdRenderOffsetY);
+
+        switch (gameState.mode) {
+            case 'playing':
                 var score = gameState.score.toString();
                 for (var i = 0; i < score.length; ++i) {
                     var digit = score[i];
                     this.drawSprite("font_0" + (48 + parseInt(digit)), playingScoreMidX + (i - score.length / 2) * playingScoreSpacing, playingScoreY)
                 }
-            } else if (gameState.mode === "ready") {
+                break;
+            case 'ready':
                 this.drawSprite("text_ready", readyTextX, readyTextY);
                 this.drawSprite("tutorial", tutorialX, tutorialY);
-            } else if (gameState.mode === "dead") {
+                break;
+            case 'dead':
                 this.drawSprite("text_game_over", gameOverTextX, gameOverTextY);
                 this.drawSprite("score_panel", gameOverPanelX, gameOverPanelY);
 
@@ -97,27 +104,10 @@
                     this.ctx.fillRect(0, 0, this.cvs.width, this.cvs.height);
                     this.ctx.globalAlpha = 1.0;
                 }
-            }
+                break;
+            default:
+                break;
         }
     }
 }
 
-class GameLoop {
-    constructor() {
-        this.timeScale = 1;
-        this.frameCount = 0;
-        this.lastTime = (new Date).getTime();
-    }
-
-    incTimeScale() {
-        this.timeScale = Math.min(gameLoop.timeScale * 1.5, 10);
-    }
-
-    decTimeScale() {
-        this.timeScale = Math.max(gameLoop.timeScale * 0.5, 1 / 10);
-    }
-
-    resetTimeScale() {
-        this.timeScale = 1;
-    }
-}

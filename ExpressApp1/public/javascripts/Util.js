@@ -25,8 +25,6 @@ function translate(startPos, vel, time) {
 }
 
 function apply(x, funcs) {
-    funcs.forEach(function (f) {
-        x = f(x);
-    });
+    funcs.forEach(f => { x = f(x);});
     return x;
 }

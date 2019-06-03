@@ -1,24 +1,40 @@
-﻿class FlappyBirdController {
-    constructor(gameState, gameRender, gameLoop, updater) {
+﻿'use strict'
+
+class GameLoop {
+    constructor() {
+        this.timeScale = 1;
+        this.frameCount = 0;
+        this.lastTime = (new Date).getTime();
+    }
+
+    incTimeScale() {
+        this.timeScale = Math.min(gameLoop.timeScale * 1.5, 10);
+    }
+
+    decTimeScale() {
+        this.timeScale = Math.max(gameLoop.timeScale * 0.5, 1 / 10);
+    }
+
+    resetTimeScale() {
+        this.timeScale = 1;
+    }
+}
+
+class BaseController {
+
+    constructor(gameState, gameRender, gameLoop) {
         this.gameState = gameState;
         this.gameRender = gameRender;
         this.gameLoop = gameLoop;
-        this.updater = updater;
     }
 
     update(frameStamp) {
         this.gameState.curFrame = frameStamp;
-        return apply(this.gameState, this.updater.getUpdaterList());
+        return apply(this.gameState, this.getUpdaterList());
     }
-}
 
-class BaseUpdater {
     getUpdaterList() {
-        return [BaseUpdater.updateLand,
-            BaseUpdater.updateBird,
-            BaseUpdater.updatePipes,
-            BaseUpdater.updateScore,
-            BaseUpdater.updateCollision];
+        return null;
     }
 
     static curPipePos(curFrame, pipe) {
@@ -81,12 +97,12 @@ class BaseUpdater {
         if (gameState.mode == "dead") return gameState;
 
         var curFrame = gameState.curFrame;
-        var landList = gameState.landList.map(function (land) {
+        var landList = gameState.landList.map(land => {
             land.curX = BaseUpdater.curLandPos(curFrame, land);
             return land;
-        }).filter(function (land) {
+        }).filter(land => {
             return land.curX > -landWidth;
-        }).sort(function (a, b) {
+        }).sort((a, b) => {
             return a.curX - b.curX;
         });
 
@@ -103,12 +119,12 @@ class BaseUpdater {
         if (gameState.mode != "playing") return gameState;
 
         var curFrame = gameState.curFrame;
-        var pipeList = gameState.pipeList.map(function (pipe) {
+        var pipeList = gameState.pipeList.map(pipe => {
             pipe.curX = BaseUpdater.curPipePos(curFrame, pipe);
             return pipe;
-        }).filter(function (pipe) {
+        }).filter(pipe => {
             return pipe.curX > -pipeWidth;
-        }).sort(function (a, b) {
+        }).sort((a, b) => {
             return a.curX - b.curX;
         });
 
@@ -125,7 +141,7 @@ class BaseUpdater {
         var birdY = gameState.birdY;
         var pipeList = gameState.pipeList;
 
-        if (pipeList.some(function (pipe) {
+        if (pipeList.some(pipe => {
             return (BaseUpdater.inPipe(pipe) &&
                 !BaseUpdater.inPipeGap(birdY, pipe)) ||
                 BaseUpdater.collideGround(birdY);
@@ -167,7 +183,7 @@ class BaseUpdater {
     }
 }
 
-class QLUpdater extends Updater {
+class QLController extends BaseController {
 
     constructor() {
         super();
@@ -179,7 +195,12 @@ class QLUpdater extends Updater {
     }
 
     getUpdaterList() {
-        return super.getUpdaterList().push(this.updateQL);
+        return [BaseUpdater.updateLand,
+        BaseUpdater.updateBird,
+        BaseUpdater.updatePipes,
+        BaseUpdater.updateScore,
+        BaseUpdater.updateCollision,
+        this.updateQL,]
     }
 
     updateQL(gameState) {
@@ -243,9 +264,9 @@ class QLUpdater extends Updater {
     static getQLState(gameState) {
         var pipeList = gameState.pipeList;
         var birdY = gameState.birdY;
-        var pipeList = pipeList.filter(function (pipe) {
+        var pipeList = pipeList.filter(pipe => {
             return birdX < pipe.curX + pipeWidth;
-        }).sort(function (a, b) {
+        }).sort((a, b) => {
             return a.curX - b.curX;
         });
 
@@ -254,7 +275,7 @@ class QLUpdater extends Updater {
 
         if (firstPipe) {
             S = [Math.floor(firstPipe.curX / qlResolution),
-                Math.floor((firstPipe.gapTop - birdY) / qlResolution),]
+            Math.floor((firstPipe.gapTop - birdY) / qlResolution)]
                 .join(',');
         }
 
